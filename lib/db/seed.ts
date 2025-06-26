@@ -1,6 +1,7 @@
 import { db } from "./index";
 import { mealPlans, users, testimonials } from "./schema";
 import { v4 as uuidv4 } from "uuid";
+import { hashPassword } from "../auth/utils";
 
 async function seed() {
   console.log("🌱 Seeding database...");
@@ -8,6 +9,7 @@ async function seed() {
   // Seed meal plans
   const mealPlanData = [
     {
+      id: uuidv4(),
       name: "Diet Plan",
       price: 30000,
       description: "Perfect for weight management and healthy living",
@@ -20,6 +22,7 @@ async function seed() {
       },
     },
     {
+      id: uuidv4(),
       name: "Protein Plan",
       price: 40000,
       description: "Ideal for fitness enthusiasts and muscle building",
@@ -32,6 +35,7 @@ async function seed() {
       },
     },
     {
+      id: uuidv4(),
       name: "Royal Plan",
       price: 60000,
       description: "Premium gourmet meals with the finest ingredients",
@@ -45,16 +49,20 @@ async function seed() {
     },
   ];
 
-  // Seed users
+  // Seed users with hashed passwords
   const userData = [
     {
+      id: uuidv4(),
       name: "Admin",
       email: "admin@seacatering.com",
+      password: hashPassword("Admin123!"),
       role: "admin",
     },
     {
+      id: uuidv4(),
       name: "John Doe",
       email: "user@example.com",
+      password: hashPassword("User123!"),
       role: "user",
     },
   ];
@@ -62,26 +70,31 @@ async function seed() {
   // Seed testimonials
   const testimonialData = [
     {
+      id: uuidv4(),
       name: "Budi Santoso",
       message: "SEA Catering has transformed my diet. The meals are delicious and perfectly portioned for my weight loss journey.",
       rating: 5,
     },
     {
+      id: uuidv4(),
       name: "Siti Rahayu",
       message: "As a busy professional, I don't have time to cook. SEA Catering delivers healthy meals right to my office. Couldn't be happier!",
       rating: 4,
     },
     {
+      id: uuidv4(),
       name: "Ahmad Hidayat",
       message: "The protein plan is perfect for my gym routine. Great taste and I'm seeing results in my muscle gains.",
       rating: 5,
     },
     {
+      id: uuidv4(),
       name: "Dewi Kusuma",
       message: "I've tried many meal delivery services, but SEA Catering stands out for quality and taste. My family loves it!",
       rating: 5,
     },
     {
+      id: uuidv4(),
       name: "Rudi Hartono",
       message: "The vegetarian options are amazing. Finally found a service that doesn't treat vegetarian meals as an afterthought.",
       rating: 4,

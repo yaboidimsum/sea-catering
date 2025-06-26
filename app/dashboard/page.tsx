@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,34 +15,48 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { useAuth } from "@/components/auth-provider"
-import { CalendarIcon, Pause, X, Settings, TrendingUp } from "lucide-react"
-import { format } from "date-fns"
+} from "@/components/ui/alert-dialog";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@/components/auth-provider";
+import { CalendarIcon, Pause, X, Settings, TrendingUp } from "lucide-react";
+import { format } from "date-fns";
 
 interface Subscription {
-  id: string
-  plan: string
-  price: number
-  mealTypes: string[]
-  deliveryDays: string[]
-  status: "active" | "paused" | "cancelled"
-  startDate: string
-  nextDelivery: string
+  id: string;
+  plan: string;
+  price: number;
+  mealTypes: string[];
+  deliveryDays: string[];
+  status: "active" | "paused" | "cancelled";
+  startDate: string;
+  nextDelivery: string;
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-  const router = useRouter()
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
-  const [pauseDate, setPauseDate] = useState<Date>()
+  const { user } = useAuth();
+  const router = useRouter();
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  // Add state for pause date range
+  const [pauseDateRange, setPauseDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
+  });
+  const [subscriptionToPause, setSubscriptionToPause] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!user) {
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
 
     // Mock subscription data
@@ -67,50 +81,76 @@ export default function DashboardPage() {
         startDate: "2024-01-01",
         nextDelivery: "2024-02-10",
       },
-    ])
-  }, [user, router])
+    ]);
+  }, [user, router]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(price)
-  }
+    }).format(price);
+  };
 
+  // Update the pause subscription handler
   const handlePauseSubscription = (subscriptionId: string) => {
-    setSubscriptions((prev) =>
-      prev.map((sub) => (sub.id === subscriptionId ? { ...sub, status: "paused" as const } : sub)),
-    )
-  }
+    if (pauseDateRange.from && pauseDateRange.to) {
+      setSubscriptions((prev) =>
+        prev.map((sub) =>
+          sub.id === subscriptionId
+            ? {
+                ...sub,
+                status: "paused" as const,
+                pauseFrom: format(pauseDateRange.from!, "yyyy-MM-dd"),
+                pauseTo: format(pauseDateRange.to!, "yyyy-MM-dd"),
+              }
+            : sub
+        )
+      );
+      // Reset the pause date range and subscription to pause
+      setPauseDateRange({ from: undefined, to: undefined });
+      setSubscriptionToPause(null);
+    }
+  };
 
   const handleCancelSubscription = (subscriptionId: string) => {
     setSubscriptions((prev) =>
-      prev.map((sub) => (sub.id === subscriptionId ? { ...sub, status: "cancelled" as const } : sub)),
-    )
-  }
+      prev.map((sub) =>
+        sub.id === subscriptionId
+          ? { ...sub, status: "cancelled" as const }
+          : sub
+      )
+    );
+  };
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="container mx-auto px-4 py-8 safe-area-inset">
+      <div className="safe-area-inset container mx-auto px-4 py-8">
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-white mb-2 text-balance">Welcome back, {user.name}</h1>
-          <p className="text-gray-400 text-pretty">Manage your meal subscriptions and preferences</p>
+          <h1 className="mb-2 text-balance text-3xl font-bold text-white">
+            Welcome back, {user.name}
+          </h1>
+          <p className="text-pretty text-gray-400">
+            Manage your meal subscriptions and preferences
+          </p>
         </div>
 
         {/* Stats Overview with enhanced styling */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-800 glass-effect interactive-hover">
+        <div className="mb-8 grid gap-6 md:grid-cols-3">
+          <Card className="glass-effect interactive-hover border-gray-800 bg-gray-900">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Active Subscriptions</p>
+                  <p className="text-sm text-gray-400">Active Subscriptions</p>
                   <p className="text-2xl font-bold text-white">
-                    {subscriptions.filter((sub) => sub.status === "active").length}
+                    {
+                      subscriptions.filter((sub) => sub.status === "active")
+                        .length
+                    }
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-green-500" />
@@ -118,19 +158,24 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800 glass-effect interactive-hover">
+          <Card className="glass-effect interactive-hover border-gray-800 bg-gray-900">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Monthly Spend</p>
+                  <p className="text-sm text-gray-400">Monthly Spend</p>
                   <p className="text-2xl font-bold text-white">
                     {formatPrice(
                       subscriptions
                         .filter((sub) => sub.status === "active")
                         .reduce(
-                          (total, sub) => total + sub.price * sub.mealTypes.length * sub.deliveryDays.length * 4.3,
-                          0,
-                        ),
+                          (total, sub) =>
+                            total +
+                            sub.price *
+                              sub.mealTypes.length *
+                              sub.deliveryDays.length *
+                              4.3,
+                          0
+                        )
                     )}
                   </p>
                 </div>
@@ -139,11 +184,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border-gray-800 glass-effect interactive-hover">
+          <Card className="glass-effect interactive-hover border-gray-800 bg-gray-900">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Next Delivery</p>
+                  <p className="text-sm text-gray-400">Next Delivery</p>
                   <p className="text-2xl font-bold text-white">Feb 5</p>
                 </div>
                 <CalendarIcon className="h-8 w-8 text-purple-500" />
@@ -154,24 +199,28 @@ export default function DashboardPage() {
 
         {/* Subscriptions with improved layout */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white text-balance">Your Subscriptions</h2>
+          <h2 className="text-balance text-2xl font-bold text-white">
+            Your Subscriptions
+          </h2>
 
           {subscriptions.map((subscription, index) => (
             <Card
               key={subscription.id}
-              className="bg-gray-900 border-gray-800 glass-effect animate-slide-up"
+              className="glass-effect animate-slide-up border-gray-800 bg-gray-900"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-white">{subscription.plan}</CardTitle>
+                  <CardTitle className="text-white">
+                    {subscription.plan}
+                  </CardTitle>
                   <Badge
                     variant={
                       subscription.status === "active"
                         ? "default"
                         : subscription.status === "paused"
-                          ? "secondary"
-                          : "destructive"
+                        ? "secondary"
+                        : "destructive"
                     }
                     className="backdrop-blur-sm"
                   >
@@ -180,16 +229,18 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Plan Details</p>
-                      <p className="text-white font-semibold">{formatPrice(subscription.price)} per meal</p>
+                      <p className="text-sm text-gray-400">Plan Details</p>
+                      <p className="font-semibold text-white">
+                        {formatPrice(subscription.price)} per meal
+                      </p>
                     </div>
 
                     <div>
-                      <p className="text-gray-400 text-sm">Meal Types</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <p className="text-sm text-gray-400">Meal Types</p>
+                      <div className="mt-1 flex flex-wrap gap-2">
                         {subscription.mealTypes.map((type) => (
                           <Badge
                             key={type}
@@ -203,10 +254,14 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <p className="text-gray-400 text-sm">Delivery Days</p>
-                      <div className="flex flex-wrap gap-2 mt-1">
+                      <p className="text-sm text-gray-400">Delivery Days</p>
+                      <div className="mt-1 flex flex-wrap gap-2">
                         {subscription.deliveryDays.map((day) => (
-                          <Badge key={day} variant="outline" className="border-gray-600 text-gray-300 backdrop-blur-sm">
+                          <Badge
+                            key={day}
+                            variant="outline"
+                            className="border-gray-600 text-gray-300 backdrop-blur-sm"
+                          >
                             {day}
                           </Badge>
                         ))}
@@ -216,73 +271,169 @@ export default function DashboardPage() {
 
                   <div className="space-y-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Monthly Total</p>
-                      <p className="text-white font-semibold">
+                      <p className="text-sm text-gray-400">Monthly Total</p>
+                      <p className="font-semibold text-white">
                         {formatPrice(
-                          subscription.price * subscription.mealTypes.length * subscription.deliveryDays.length * 4.3,
+                          subscription.price *
+                            subscription.mealTypes.length *
+                            subscription.deliveryDays.length *
+                            4.3
                         )}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-gray-400 text-sm">Next Delivery</p>
-                      <p className="text-white">{format(new Date(subscription.nextDelivery), "MMM dd, yyyy")}</p>
+                      <p className="text-sm text-gray-400">Next Delivery</p>
+                      <p className="text-white">
+                        {format(
+                          new Date(subscription.nextDelivery),
+                          "MMM dd, yyyy"
+                        )}
+                      </p>
                     </div>
 
                     <div className="flex gap-2">
                       {subscription.status === "active" && (
                         <>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 focus-ring">
-                                <Pause className="h-4 w-4 mr-2" />
-                                Pause
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-800 glass-effect">
-                              <div className="p-4">
-                                <p className="text-white font-semibold mb-2">Select pause date</p>
-                                <Calendar
-                                  mode="single"
-                                  selected={pauseDate}
-                                  onSelect={setPauseDate}
-                                  className="rounded-md border-gray-700"
-                                />
-                                <div className="flex gap-2 mt-4">
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handlePauseSubscription(subscription.id)}
-                                    disabled={!pauseDate}
-                                    className="focus-ring"
-                                  >
-                                    Confirm Pause
-                                  </Button>
-                                </div>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="border-red-600 text-red-400 focus-ring">
-                                <X className="h-4 w-4 mr-2" />
-                                Cancel
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="focus-ring border-gray-600 text-gray-300"
+                              >
+                                <Pause className="mr-2 h-4 w-4" />
+                                Pause
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-gray-900 border-gray-800 glass-effect">
+                            <AlertDialogContent className="glass-effect w-auto border-gray-800 bg-gray-900 p-4">
                               <AlertDialogHeader>
-                                <AlertDialogTitle className="text-white">Cancel Subscription</AlertDialogTitle>
+                                <AlertDialogTitle className="text-white">
+                                  Pause Subscription
+                                </AlertDialogTitle>
                                 <AlertDialogDescription className="text-gray-400">
-                                  Are you sure you want to cancel this subscription? This action cannot be undone.
+                                  Select the date range during which you want to
+                                  pause your subscription.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
+
+                              <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">
+                                    From
+                                  </p>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className="w-full justify-start text-left font-normal"
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {pauseDateRange.from ? (
+                                          format(pauseDateRange.from, "PPP")
+                                        ) : (
+                                          <span>Select start date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto border-gray-800 bg-gray-900 p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={pauseDateRange.from}
+                                        onSelect={(date) =>
+                                          setPauseDateRange({
+                                            ...pauseDateRange,
+                                            from: date,
+                                          })
+                                        }
+                                        className="rounded-md border-gray-700"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <p className="font-semibold text-white">To</p>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className="w-full justify-start text-left font-normal"
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {pauseDateRange.to ? (
+                                          format(pauseDateRange.to, "PPP")
+                                        ) : (
+                                          <span>Select end date</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto border-gray-800 bg-gray-900 p-0">
+                                      <Calendar
+                                        mode="single"
+                                        selected={pauseDateRange.to}
+                                        onSelect={(date) =>
+                                          setPauseDateRange({
+                                            ...pauseDateRange,
+                                            to: date,
+                                          })
+                                        }
+                                        className="rounded-md border-gray-700"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              </div>
+
                               <AlertDialogFooter>
-                                <AlertDialogCancel className="bg-gray-800 border-gray-700 text-white focus-ring">
+                                <AlertDialogCancel className="focus-ring border-gray-700 bg-gray-800 text-white">
                                   Cancel
                                 </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleCancelSubscription(subscription.id)}
-                                  className="bg-red-600 hover:bg-red-700 focus-ring"
+                                  onClick={() => {
+                                    setSubscriptionToPause(subscription.id);
+                                    handlePauseSubscription(subscription.id);
+                                  }}
+                                  disabled={
+                                    !pauseDateRange.from || !pauseDateRange.to
+                                  }
+                                  className="focus-ring"
+                                >
+                                  Confirm Pause
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="focus-ring border-red-600 text-red-400"
+                              >
+                                <X className="mr-2 h-4 w-4" />
+                                Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="glass-effect border-gray-800 bg-gray-900">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-white">
+                                  Cancel Subscription
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-gray-400">
+                                  Are you sure you want to cancel this
+                                  subscription? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="focus-ring border-gray-700 bg-gray-800 text-white">
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleCancelSubscription(subscription.id)
+                                  }
+                                  className="focus-ring bg-red-600 hover:bg-red-700"
                                 >
                                   Cancel Subscription
                                 </AlertDialogAction>
@@ -296,10 +447,14 @@ export default function DashboardPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="border-green-600 text-green-400 focus-ring"
+                          className="focus-ring border-green-600 text-green-400"
                           onClick={() =>
                             setSubscriptions((prev) =>
-                              prev.map((sub) => (sub.id === subscription.id ? { ...sub, status: "active" } : sub)),
+                              prev.map((sub) =>
+                                sub.id === subscription.id
+                                  ? { ...sub, status: "active" }
+                                  : sub
+                              )
                             )
                           }
                         >
@@ -314,9 +469,11 @@ export default function DashboardPage() {
           ))}
 
           {subscriptions.length === 0 && (
-            <Card className="bg-gray-900 border-gray-800 glass-effect">
+            <Card className="glass-effect border-gray-800 bg-gray-900">
               <CardContent className="p-8 text-center">
-                <p className="text-gray-400 mb-4">You don't have any active subscriptions yet.</p>
+                <p className="mb-4 text-gray-400">
+                  You don't have any active subscriptions yet.
+                </p>
                 <Button asChild className="focus-ring">
                   <a href="/subscription">Start Your First Subscription</a>
                 </Button>
@@ -326,5 +483,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

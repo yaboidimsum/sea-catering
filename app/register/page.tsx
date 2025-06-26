@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/components/auth-provider"
 import { Loader2 } from "lucide-react"
 
@@ -20,6 +21,7 @@ export default function RegisterPage() {
     confirmPassword: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [generalError, setGeneralError] = useState("")
   const { register, isLoading } = useAuth()
   const router = useRouter()
 
@@ -60,24 +62,27 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setGeneralError("")
 
     if (!validateForm()) return
 
     const success = await register(formData.name, formData.email, formData.password)
     if (success) {
       router.push("/dashboard")
+    } else {
+      setGeneralError("Registration failed. Please try again.")
     }
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-8 safe-area-inset">
+      <div className="w-full max-w-md animate-fade-in">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create your account</h1>
-          <p className="text-gray-400">Join SEA Catering and start eating healthy</p>
+          <h1 className="text-3xl font-bold text-white mb-2 text-balance">Create an account</h1>
+          <p className="text-gray-400 text-pretty">Join SEA Catering for healthy, delicious meals</p>
         </div>
 
-        <Card className="bg-gray-900 border-gray-800">
+        <Card className="bg-gray-900 border-gray-800 glass-effect">
           <CardHeader>
             <CardTitle className="text-white">Sign Up</CardTitle>
           </CardHeader>
@@ -92,11 +97,10 @@ export default function RegisterPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-gray-800 border-gray-700 text-white focus-ring"
                   placeholder="Enter your full name"
-                  required
                 />
-                {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -146,6 +150,12 @@ export default function RegisterPage() {
                 />
                 {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword}</p>}
               </div>
+
+              {generalError && (
+                <Alert variant="destructive" className="bg-red-900 border-red-800">
+                  <AlertDescription>{generalError}</AlertDescription>
+                </Alert>
+              )}
 
               <Button type="submit" className="w-full bg-white text-black hover:bg-gray-200" disabled={isLoading}>
                 {isLoading ? (

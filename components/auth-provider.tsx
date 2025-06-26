@@ -14,8 +14,9 @@ interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<boolean>
   register: (name: string, email: string, password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   isLoading: boolean
+  csrfToken: string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,61 +24,109 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [csrfToken, setCsrfToken] = useState<string | null>(null)
 
   useEffect(() => {
     // Check for existing session
-    const savedUser = localStorage.getItem("user")
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    setIsLoading(false)
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user) {
+            setUser(data.user);
+            setCsrfToken(data.csrfToken);
+          }
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Mock authentication - in real app, this would be an API call
-      if (email === "admin@seacatering.com" && password === "Admin123!") {
-        const adminUser = { id: "1", name: "Admin", email, role: "admin" as const }
-        setUser(adminUser)
-        localStorage.setItem("user", JSON.stringify(adminUser))
-        return true
-      } else if (email === "user@example.com" && password === "User123!") {
-        const regularUser = { id: "2", name: "John Doe", email, role: "user" as const }
-        setUser(regularUser)
-        localStorage.setItem("user", JSON.stringify(regularUser))
-        return true
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return false;
       }
-      return false
+      
+      setUser(data.user);
+      setCsrfToken(data.csrfToken);
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-      const newUser = { id: Date.now().toString(), name, email, role: "user" as const }
-      setUser(newUser)
-      localStorage.setItem("user", JSON.stringify(newUser))
-      return true
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return false;
+      }
+      
+      // After registration, log the user in
+      return await login(email, password);
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("user")
+  const logout = async (): Promise<void> => {
+    setIsLoading(true)
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken || '',
+        },
+      });
+      
+      setUser(null);
+      setCsrfToken(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  return <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, csrfToken }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

@@ -8,6 +8,13 @@
       "when": 1750697333477,
       "tag": "0000_boring_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1750952932066,
+      "tag": "0001_faithful_baron_strucker",
+      "breakpoints": true
     }
   ]
 }

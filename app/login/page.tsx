@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,8 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const { login, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,7 +30,7 @@ export default function LoginPage() {
 
     const success = await login(formData.email, formData.password)
     if (success) {
-      router.push("/dashboard")
+      router.push(redirect)
     } else {
       setError("Invalid email or password")
     }
@@ -79,16 +81,12 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <Alert className="bg-red-900/50 border-red-800 backdrop-blur-sm">
-                  <AlertDescription className="text-red-200">{error}</AlertDescription>
+                <Alert variant="destructive" className="bg-red-900 border-red-800">
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
-              <Button
-                type="submit"
-                className="w-full bg-white text-black hover:bg-gray-200 focus-ring"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -98,22 +96,14 @@ export default function LoginPage() {
                   "Sign In"
                 )}
               </Button>
-            </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
+              <div className="text-center text-sm text-gray-400">
                 Don't have an account?{" "}
-                <Link href="/register" className="text-white hover:underline focus-ring rounded">
+                <Link href="/register" className="text-primary hover:underline">
                   Sign up
                 </Link>
-              </p>
-            </div>
-
-            <div className="mt-4 p-4 bg-gray-800/50 rounded-lg backdrop-blur-sm">
-              <p className="text-gray-300 text-sm mb-2">Demo accounts:</p>
-              <p className="text-xs text-gray-400">Admin: admin@seacatering.com / Admin123!</p>
-              <p className="text-xs text-gray-400">User: user@example.com / User123!</p>
-            </div>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
